@@ -4,13 +4,20 @@ var argv = require('minimist')(process.argv.slice(2))
 var execshell = require('exec-sh')
 var path = require('path')
 var watch = require('./main.js')
+var cp = require('child_process'),
+  psTree = require('ps-tree');
+//var console = require('tracer').colorConsole()
 
+// TODO(hbt) NEXT sigint sighup handling and interruptions -- orphans and memory leaks
+// TODO(hbt) NEXT case where we stop and reload instead of wait and reload
+// TODO(hbt) NEXT singleton-lock singleton-kill
 if(argv._.length === 0) {
   console.error([
     'Usage: watch <command> [...directory]',
     '[--wait=<seconds>]',
     '[--filter=<file>]',
     '[--interval=<seconds>]',
+    '[--singleton]',
     '[--ignoreDotFiles]',
     '[--ignoreUnreadable]',
     '[--ignoreDirectoryPattern]'
@@ -37,6 +44,9 @@ if (argv.interval || argv.i) {
   watchTreeOpts.interval = Number(argv.interval || argv.i || 0.2);
 }
 
+if(argv.singleton || argv.s)
+  watchTreeOpts.singleton = true
+
 if(argv.ignoreDotFiles || argv.d)
   watchTreeOpts.ignoreDotFiles = true
 
@@ -57,13 +67,26 @@ if(argv.filter || argv.f) {
   }
 }
 
+
+function killAllOrphans(pid)
+{
+  psTree(pid, function(err, children)
+  {
+    cp.spawn('kill', ['-9'].concat(children.map(function(p)
+    {
+      return p.PID
+    })));
+  });
+}
+
 var wait = false
 
 var dirLen = dirs.length
 var skip = dirLen - 1
+var childMonitor 
 for(i = 0; i < dirLen; i++) {
   var dir = dirs[i]
-  console.error('> Watching', dir)
+  console.log('> Watching', dir)
   watch.watchTree(dir, watchTreeOpts, function (f, curr, prev) {
     if(skip) {
         skip--
@@ -71,7 +94,24 @@ for(i = 0; i < dirLen; i++) {
     }
     if(wait) return
 
-    execshell(command)
+    // ignore modified files if command (child process) is already running (do not create another process)
+    if(watchTreeOpts.singleton && childMonitor)
+    {
+        psTree(childMonitor.pid, function(err, children)
+        {
+          // all children are done executing. We can now launch command again.
+          if(!children.length)
+          {
+            childMonitor = execshell(command)
+          }
+        });
+    }
+    else
+    {
+      childMonitor = execshell(command)
+    }
+
+    
 
     if(waitTime > 0) {
       wait = true

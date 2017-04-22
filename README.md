@@ -19,6 +19,7 @@ The options object is passed to fs.watchFile but can also be used to provide two
 * `'ignoreDotFiles'` - When true this option means that when the file tree is walked it will ignore files that being with "."
 * `'filter'` - You can use this option to provide a function that returns true or false for each file and directory to decide whether or not that file/directory is included in the watcher.
 * `'interval'` - Specifies the interval duration in seconds, the time period between polling for file changes.
+* `'singleton'` - When true, this options means that when a file is modified, we wait until the current command process is done running before launching it again
 * `'ignoreUnreadableDir'` - When true, this options means that when a file can't be read, this file is silently skipped.
 * `'ignoreNotPermitted'` - When true, this options means that when a file can't be read due to permission issues, this file is silently skipped.
 * `'ignoreDirectoryPattern'` - When a regex pattern is set, e.g. /node_modules/, these directories are silently skipped.
@@ -100,14 +101,17 @@ OPTIONS:
         Path to a require-able .js file that exports a filter
         function to be passed to watchTreeOptions.filter.
         Path is resolved relative to process.cwd().
+        
+    --singleton=<boolean>, -s
+        Ignores changed files until the command is done running
 
     --interval=<seconds>
         Specifies the interval duration in seconds, the time period between polling for file changes.
 
-    --ignoreDotFiles, -d
+    --ignoreDotFiles=<boolean>, -d
         Ignores dot or hidden files in the watch [directory].
 
-     --ignoreUnreadable, -u
+     --ignoreUnreadable=<boolean>, -u
         Silently ignores files that cannot be read within the
         watch [directory].
 

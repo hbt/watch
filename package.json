@@ -35,6 +35,8 @@
   "main": "./main",
   "dependencies": {
     "exec-sh": "^0.2.0",
-    "minimist": "^1.2.0"
+    "minimist": "^1.2.0",
+    "ps-tree": "^1.1.0",
+    "tracer": "^0.8.7"
   }
 }
