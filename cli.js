@@ -8,7 +8,6 @@ var cp = require('child_process'),
   psTree = require('ps-tree');
 //var console = require('tracer').colorConsole()
 
-// TODO(hbt) NEXT sigint sighup handling and interruptions -- orphans and memory leaks
 // TODO(hbt) NEXT case where we stop and reload instead of wait and reload
 // TODO(hbt) NEXT singleton-lock singleton-kill
 if(argv._.length === 0) {
@@ -97,10 +96,11 @@ for(i = 0; i < dirLen; i++) {
     // ignore modified files if command (child process) is already running (do not create another process)
     if(watchTreeOpts.singleton && childMonitor)
     {
-        psTree(childMonitor.pid, function(err, children)
+        var pid = childMonitor.pid
+        psTree(pid, function(err, children)
         {
           // all children are done executing. We can now launch command again.
-          if(!children.length)
+          if(!children.length && pid == childMonitor.pid)
           {
             childMonitor = execshell(command)
           }
