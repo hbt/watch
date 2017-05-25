@@ -8,8 +8,7 @@ var cp = require('child_process'),
   psTree = require('ps-tree');
 //var console = require('tracer').colorConsole()
 
-// TODO(hbt) NEXT case where we stop and reload instead of wait and reload
-// TODO(hbt) NEXT singleton-lock singleton-kill
+// TODO(hbt) ENHANCE singleton-lock singleton-kill - case where we stop and reload instead of wait and reload
 if(argv._.length === 0) {
   console.error([
     'Usage: watch <command> [...directory]',
