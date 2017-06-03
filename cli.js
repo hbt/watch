@@ -8,7 +8,6 @@ var cp = require('child_process'),
   psTree = require('ps-tree');
 //var console = require('tracer').colorConsole()
 
-// TODO(hbt) ENHANCE singleton-lock singleton-kill - case where we stop and reload instead of wait and reload
 if(argv._.length === 0) {
   console.error([
     'Usage: watch <command> [...directory]',
@@ -16,6 +15,7 @@ if(argv._.length === 0) {
     '[--filter=<file>]',
     '[--interval=<seconds>]',
     '[--singleton]',
+    '[--singletonQueue]',
     '[--ignoreDotFiles]',
     '[--ignoreUnreadable]',
     '[--ignoreDirectoryPattern]'
@@ -44,6 +44,9 @@ if (argv.interval || argv.i) {
 
 if(argv.singleton || argv.s)
   watchTreeOpts.singleton = true
+
+if(argv.singletonQueue || argv.s)
+  watchTreeOpts.singletonQueue = true
 
 if(argv.ignoreDotFiles || argv.d)
   watchTreeOpts.ignoreDotFiles = true
@@ -77,16 +80,9 @@ function killAllOrphans(pid)
   });
 }
 
-var wait = false
 
-var dirLen = dirs.length
-var skip = dirLen - 1
-var childMonitor 
-for(i = 0; i < dirLen; i++) {
-  var dir = dirs[i]
-  console.log('> Watching', dir)
-  watch.watchTree(dir, watchTreeOpts, function (f, curr, prev) {
-    if(skip) {
+function execScript() {
+      if(skip) {
         skip--
         return
     }
@@ -102,6 +98,8 @@ for(i = 0; i < dirLen; i++) {
           if(!children.length && pid == childMonitor.pid)
           {
             childMonitor = execshell(command)
+          } else {
+            queue.push('req')
           }
         });
     }
@@ -118,5 +116,39 @@ for(i = 0; i < dirLen; i++) {
         wait = false
       }, waitTime * 1000)
     }
+}
+
+function checkQueue() 
+{
+  if(queue.length > 0 && childMonitor)
+  {
+    var pid = childMonitor.pid
+    psTree(pid, function(err, children)
+    {
+      // all children are done executing. We can now launch command again.
+      if(!children.length && pid == childMonitor.pid && queue.length > 0)
+      {
+        queue = []
+        execScript()
+      }
+    });
+  }
+}
+
+
+var queue = []
+var wait = false
+var dirLen = dirs.length
+var skip = dirLen - 1
+var childMonitor
+for(i = 0; i < dirLen; i++) {
+  var dir = dirs[i]
+  console.log('> Watching', dir)
+  watch.watchTree(dir, watchTreeOpts, function (f, curr, prev) {
+    execScript()
   })
+}
+
+if(argv.singletonQueue) {
+  setInterval(checkQueue, watchTreeOpts.interval)
 }

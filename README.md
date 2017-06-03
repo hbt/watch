@@ -20,6 +20,7 @@ The options object is passed to fs.watchFile but can also be used to provide two
 * `'filter'` - You can use this option to provide a function that returns true or false for each file and directory to decide whether or not that file/directory is included in the watcher.
 * `'interval'` - Specifies the interval duration in seconds, the time period between polling for file changes.
 * `'singleton'` - When true, this options means that when a file is modified, we wait until the current command process is done running before launching it again
+* `'singletonQueue'` - When true, this options means that when a file is modified and singleton is running, changes are queued and command will run again 
 * `'ignoreUnreadableDir'` - When true, this options means that when a file can't be read, this file is silently skipped.
 * `'ignoreNotPermitted'` - When true, this options means that when a file can't be read due to permission issues, this file is silently skipped.
 * `'ignoreDirectoryPattern'` - When a regex pattern is set, e.g. /node_modules/, these directories are silently skipped.
@@ -104,6 +105,9 @@ OPTIONS:
         
     --singleton=<boolean>, -s
         Ignores changed files until the command is done running
+        
+    --singletonQueue=<boolean>, -s
+        Queues changed files and runs the command again (work with --singleton)
 
     --interval=<seconds>
         Specifies the interval duration in seconds, the time period between polling for file changes.

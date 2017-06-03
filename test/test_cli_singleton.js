@@ -35,6 +35,7 @@ function createMonitor()
 
 function writeToWatchedTarget()
 {
+  console.log('write')
   execshell(`sleep 1; echo 'hello' >> ${target}`)
 }
 
@@ -93,14 +94,73 @@ function killChildrenRecursively(monitor)
 
 }
 
+function checkScriptQueuesWhileRunningAndExecutesTwice()
+{
+   // another write much later triggers the script again 
+  setTimeout(function()
+  {
+    writeToWatchedTarget()
+
+    setTimeout(function()
+    {
+      fs.readFile(target2, 'utf8', function(err, data)
+      {
+        if(err)
+        {
+          return console.log(err);
+        }
+
+        // queue during process run
+        writeToWatchedTarget()
+        assert.equal(data, 'hello\nhello\n')
+
+      });
+    }, 2000)
+
+    setTimeout(function()
+    {
+      fs.readFile(target2, 'utf8', function(err, data)
+      {
+        if(err)
+        {
+          return console.log(err);
+        }
+
+        // check queued item triggered another execution
+        assert.equal(data, 'hello\nhello\nhello\n')
+
+      });
+    }, 9000)
+   
+  }, 8000) 
+}
+
+function testSingleton() {
+
+  // this call should be ignored since we passed singleton
+  writeToWatchedTarget()
+  
+  checkScriptWasExecutedOnce()
+  checkScriptStillWorksOnceExecutionIsComplete()
+}
+
+function testQueue() 
+{
+  clearFile()
+  checkScriptQueuesWhileRunningAndExecutesTwice()
+}
+
 clearFile()
 
 var monitor = createMonitor()
-// this call should be ignored since we passed singleton
-writeToWatchedTarget()
 
-checkScriptWasExecutedOnce()
-checkScriptStillWorksOnceExecutionIsComplete()
+// 2 tests available. uncomment -- 
+// tests sould be rewritten as to use timeouts 
+testSingleton()
+// Note(hbt) uncomment -- not worth spending time reorganizing tests
+//testQueue()
+
+
 
 
 process.on('uncaughtException', function(err)
